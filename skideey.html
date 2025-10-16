@@ -1,0 +1,872 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>SKIDEEY</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+<style>
+  :root{
+    --bg-1:#04102b;
+    --bg-2:#0b2a66;
+    --accent:#4f46e5;
+    --accent-2:#60a5fa;
+    --white: #ffffff;
+    --card:#ffffff;
+    --muted:#6b7280;
+  }
+
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0;
+    font-family:'Poppins',system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial;
+    -webkit-font-smoothing:antialiased;
+    color:#071029;
+    background:
+      radial-gradient(700px 300px at 10% 10%, rgba(79,70,229,0.06), transparent 12%),
+      radial-gradient(500px 250px at 95% 90%, rgba(96,165,250,0.03), transparent 12%),
+      linear-gradient(180deg,var(--bg-1),var(--bg-2));
+    display:flex;
+    flex-direction:column;
+    min-height:100vh;
+  }
+
+  /* Header */
+  header{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:14px 18px;
+    gap:12px;
+    background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01));
+    border-bottom: 1px solid rgba(255,255,255,0.03);
+    backdrop-filter: blur(6px);
+  }
+  .brand{display:flex;align-items:center;gap:12px}
+  /* orb logo */
+  .orb{
+    width:64px;height:64px;border-radius:14px;display:grid;place-items:center;
+    background: radial-gradient(120% 120% at 20% 20%, rgba(255,255,255,0.06), rgba(79,70,229,0.12) 40%, rgba(79,70,229,0.30));
+    box-shadow: 0 8px 40px rgba(79,70,229,0.12), 0 2px 6px rgba(0,0,0,0.35);
+    position:relative;
+    animation: orbGlow 3s infinite ease-in-out;
+  }
+  @keyframes orbGlow {
+    0% { box-shadow: 0 8px 30px rgba(79,70,229,0.08); transform: translateY(0); }
+    50% { box-shadow: 0 20px 60px rgba(79,70,229,0.16); transform: translateY(-2px); }
+    100% { box-shadow: 0 8px 30px rgba(79,70,229,0.08); transform: translateY(0); }
+  }
+  .orb:after{
+    content:"";
+    position:absolute; width:40px;height:40px;border-radius:50%;
+    top:6px; left:8px; background:linear-gradient(180deg, rgba(255,255,255,0.25), transparent);
+    opacity:0.25; transform:rotate(-20deg);
+  }
+  .orb-text{font-weight:800;color:var(--white);font-size:20px;letter-spacing:1px; text-shadow: 0 6px 18px rgba(79,70,229,0.12);}
+
+  /* SKIDEEY title bigger */
+  .title { font-size:20px; font-weight:800; color:var(--white); letter-spacing:1px; text-shadow: 0 6px 18px rgba(0,0,0,0.2); }
+
+  nav.top-nav{display:flex;gap:8px;align-items:center}
+  /* icon buttons (white, ~2x scale compared to earlier) */
+  .nav-btn{
+    width:56px;height:56px;border-radius:12px;display:grid;place-items:center;
+    background:transparent;border:1px solid transparent;cursor:pointer;transition:all .18s ease;
+    color:var(--white);
+  }
+  .nav-btn svg{width:28px;height:28px;display:block}
+  .nav-btn.active{ background:linear-gradient(90deg,var(--accent),var(--accent-2)); box-shadow:0 14px 40px rgba(79,70,229,0.16); transform: translateY(-3px); }
+  .nav-btn:hover{ transform: translateY(-2px); box-shadow:0 8px 24px rgba(79,70,229,0.08); }
+
+  /* Layout main single-column on mobile, two-column on wider screens */
+  main.app{
+    flex:1; width:100%; max-width:1100px; margin:18px auto; padding:0 14px;
+    display:grid; grid-template-columns: 1fr 380px; gap:18px;
+  }
+  @media (max-width:900px){
+    main.app{ grid-template-columns: 1fr; padding:0 12px; }
+  }
+
+  /* Cards */
+  .card{
+    background: var(--card);
+    border-radius:14px;
+    padding:14px;
+    color:#071029;
+    box-shadow: 0 12px 30px rgba(2,6,23,0.12);
+    border:1px solid rgba(2,6,23,0.03);
+  }
+
+  /* Composer - KIDIY */
+  .composer{ display:flex; gap:12px; align-items:flex-start; }
+  .attach-btn{
+    width:56px;height:56px;border-radius:12px;border:none;display:grid;place-items:center;cursor:pointer;
+    background:transparent;color:var(--white);transition:transform .16s, box-shadow .16s;
+  }
+  .attach-btn .glow{ display:grid;place-items:center;width:46px;height:46px;border-radius:10px;background:linear-gradient(135deg,var(--accent),var(--accent-2)); box-shadow:0 12px 30px rgba(79,70,229,0.14); transform: translateZ(0); }
+  .attach-btn:active{ transform:scale(0.98) }
+  .composer textarea{
+    flex:1; min-height:92px; padding:12px; border-radius:12px; border:1px solid #e6e9ef; font-size:15px; resize:vertical;
+    background: #fff; color:#071029;
+  }
+  .post-actions{ display:flex; align-items:center; gap:12px; margin-left:auto }
+  .btn-post{
+    background:linear-gradient(90deg,var(--accent),var(--accent-2)); color:white;border:none;padding:10px 18px;border-radius:12px;cursor:pointer;font-weight:700;
+    box-shadow:0 12px 30px rgba(79,70,229,0.12);
+  }
+
+  /* preview small thumbnails */
+  .preview-list{ display:flex; gap:8px; align-items:center; flex-wrap:wrap }
+  .preview-list img, .preview-list video{ max-width:120px; max-height:96px; border-radius:8px; object-fit:cover; border:1px solid #e6e9ef }
+
+  /* posts list */
+  .posts{ display:flex; flex-direction:column; gap:12px; margin-top:12px; }
+  .post{ display:flex; gap:12px; align-items:flex-start; background:#fff; border-radius:12px; padding:12px; border:1px solid rgba(2,6,23,0.03) }
+  .post .avatar{ width:56px; height:56px; border-radius:12px; display:grid; place-items:center; background:#eef6ff; font-weight:700; color:var(--accent) }
+  .post .post-body{ flex:1 }
+  .post .meta{ display:flex; align-items:center; gap:8px; color:var(--muted); font-size:13px }
+  .post .text{ margin-top:8px; color:#071029; white-space:pre-wrap }
+
+  /* right column removed requirement: but we keep small 'online' box as card if screen wide */
+  aside.right{ display:flex; flex-direction:column; gap:12px }
+  @media (max-width:900px){ aside.right{ order:2 } }
+
+  .online-list{ display:flex; flex-direction:column; gap:10px }
+  .online-item{ display:flex; align-items:center; gap:10px }
+  .online-item .avatar-sm{ width:42px; height:42px; border-radius:10px; display:grid; place-items:center; background:#fff; color:var(--accent); font-weight:700 }
+
+  /* chat section full width (in left main area) */
+  .chat-actions-row{ display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:8px }
+  .room-menu{ display:none; position:absolute; top:64px; right:18px; background:#fff; border-radius:10px; box-shadow:0 12px 30px rgba(2,6,23,0.12); overflow:hidden; z-index:80 }
+  .room-menu button{ display:block; width:100%; padding:12px; border:none; background:transparent; text-align:left; cursor:pointer }
+  .room-menu button:hover{ background:#f3f7ff }
+
+  .chat-card{ display:flex; flex-direction:column; gap:8px }
+  .chat-window{ border-radius:12px; overflow:hidden; border:1px solid rgba(2,6,23,0.04) }
+  .chat-scroll{ max-height:56vh; overflow:auto; padding:12px; background:linear-gradient(180deg,#f7fbff,#fff) }
+  .chat-row{ display:flex; gap:10px; margin-bottom:10px; align-items:flex-end }
+  .chat-row .avatar{ width:44px; height:44px; border-radius:10px; display:grid; place-items:center; background:#eef6ff; color:var(--accent); font-weight:700 }
+  .chat-bubble{ padding:10px 12px; border-radius:12px; max-width:78%; font-size:14px }
+  .chat-bubble.me{ margin-left:auto; background:linear-gradient(90deg,var(--accent),var(--accent-2)); color:#fff }
+  .chat-bubble.other{ background:#eef6ff; color:#071029 }
+
+  .chat-bottom{ display:flex; gap:8px; padding:10px; align-items:center; background:linear-gradient(180deg, rgba(255,255,255,0.95), rgba(255,255,255,0.98)) }
+  .chat-input{ flex:1; padding:10px 14px; border-radius:999px; border:1px solid #e6e9ef }
+  .clip-btn{ width:56px; height:56px; border-radius:12px; background:linear-gradient(135deg,var(--accent),var(--accent-2)); color:#fff; display:grid; place-items:center; border:none; cursor:pointer; box-shadow:0 12px 30px rgba(79,70,229,0.12) }
+  .send-btn{ width:56px; height:56px; border-radius:12px; background:linear-gradient(90deg,#06b6d4,#0ea5e9); color:#fff; border:none; cursor:pointer; display:grid; place-items:center; }
+
+  /* attach popup (chat and kidiy) */
+  .attach-popup{ position:absolute; bottom:70px; display:none; background:#071029; color:#fff; padding:10px; border-radius:12px; box-shadow:0 12px 30px rgba(2,6,23,0.4); z-index:90; min-width:220px }
+  .attach-popup button{ display:flex; gap:10px; align-items:center; padding:8px; background:transparent;border:none;color:inherit; cursor:pointer; width:100% }
+  .attach-popup button:hover{ background:rgba(255,255,255,0.03) }
+
+  .glow-icon{ width:40px; height:40px; border-radius:10px; display:grid; place-items:center; color:#fff; font-size:18px }
+  .glow-photo{ background:linear-gradient(135deg,#06b6d4,#60a5fa); box-shadow:0 12px 30px rgba(6,182,212,0.12) }
+  .glow-video{ background:linear-gradient(135deg,#f97316,#ffb86b); box-shadow:0 12px 30px rgba(249,115,22,0.12) }
+  .glow-doc{ background:linear-gradient(135deg,#7c3aed,#9f7aea); box-shadow:0 12px 30px rgba(124,58,237,0.12) }
+
+  /* file inputs hidden */
+  .file-hidden{ display:none }
+
+  /* footer */
+  footer{ text-align:center; padding:12px; color:var(--white) }
+  footer.hidden{ display:none }
+
+  /* small */
+  .hint{ font-size:13px; color:var(--muted) }
+
+  @media (max-width:560px){
+    .nav-btn{ width:52px;height:52px }
+    .nav-btn svg{ width:26px;height:26px }
+    .orb{ width:56px; height:56px }
+    .title{ font-size:18px }
+    .attach-btn{ width:52px; height:52px }
+    .composer textarea{ min-height:72px }
+    .chat-scroll{ max-height:44vh }
+    .post .avatar{ width:48px;height:48px }
+  }
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">
+    <div class="orb" aria-hidden="true"><div class="orb-text">SK</div></div>
+    <div>
+      <div class="title">SKIDEEY</div>
+      <div class="hint" style="color:rgba(255,255,255,0.85); font-size:12px">Simple — Private — Local</div>
+    </div>
+  </div>
+
+  <nav class="top-nav" aria-label="Main">
+    <button class="nav-btn active" data-tab="kidiy" title="KIDIY" onclick="navClick(event)">
+      <!-- big feed icon (white) -->
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h7M3 6h13M3 18h13"/></svg>
+    </button>
+
+    <button class="nav-btn" data-tab="chat" title="Chat" onclick="navClick(event)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+    </button>
+
+    <button class="nav-btn" data-tab="notifications" title="Notifications" onclick="navClick(event)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M15 17h5l-1.405-1.405A2.032 2.032 0 0 1 18.6 14.6V11a6 6 0 1 0-12 0v3.6c0 .538-.214 1.055-.595 1.495L4 17h5"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+    </button>
+
+    <button class="nav-btn" data-tab="profile" title="Profile" onclick="navClick(event)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+    </button>
+  </nav>
+</header>
+
+<main class="app" role="main">
+  <!-- Left: main content -->
+  <section class="left" style="display:flex;flex-direction:column;gap:16px">
+    <!-- KIDIY -->
+    <div id="kidiy" class="card tab-content" style="display:block">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start">
+        <div style="display:flex;gap:12px;align-items:center">
+          <div id="composerAvatar" class="avatar" style="width:56px;height:56px;border-radius:12px;background:#fff;color:var(--accent);display:grid;place-items:center;font-weight:700"></div>
+          <div>
+            <div id="composerName" style="font-weight:700">Your Name</div>
+            <div class="hint">What would you like to share?</div>
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-top:12px" class="composer">
+        <div style="position:relative">
+          <button class="attach-btn" id="kidiyAttachBtn" onclick="toggleKidiyAttach()" aria-haspopup="true" aria-expanded="false">
+            <div class="glow">📎</div>
+          </button>
+
+          <!-- popup with colored animated icons -->
+          <div id="kidiyAttachPopup" class="attach-popup" style="display:none;left:0">
+            <button onclick="triggerKidiyFile('image')"><span class="glow-icon glow-photo">📸</span><span style="margin-left:8px">Photo</span></button>
+            <button onclick="triggerKidiyFile('video')"><span class="glow-icon glow-video">🎥</span><span style="margin-left:8px">Video</span></button>
+            <button onclick="triggerKidiyFile('audio')"><span class="glow-icon glow-photo">🎵</span><span style="margin-left:8px">Audio</span></button>
+            <button onclick="triggerKidiyFile('doc')"><span class="glow-icon glow-doc">📄</span><span style="margin-left:8px">Document</span></button>
+          </div>
+        </div>
+
+        <textarea id="kidiyText" placeholder="Write something..." aria-label="KIDIY post"></textarea>
+
+        <div class="post-actions" style="align-items:center">
+          <div id="kidiyPreview" class="preview-list"></div>
+          <button class="btn-post" onclick="createKidiyPost()">Post</button>
+        </div>
+      </div>
+
+      <!-- hidden file inputs -->
+      <input id="kidiyImageInput" class="file-hidden" type="file" accept="image/*" onchange="handleKidiyFiles(event,'image')">
+      <input id="kidiyVideoInput" class="file-hidden" type="file" accept="video/*" onchange="handleKidiyFiles(event,'video')">
+      <input id="kidiyAudioInput" class="file-hidden" type="file" accept="audio/*" onchange="handleKidiyFiles(event,'audio')">
+      <input id="kidiyDocInput" class="file-hidden" type="file" accept=".pdf,.doc,.docx,.txt" onchange="handleKidiyFiles(event,'doc')">
+
+      <div class="posts" id="postsList"></div>
+    </div>
+
+    <!-- Chat (chat tab first shows options menu when opened) -->
+    <div id="chat" class="card tab-content" style="display:none">
+      <div class="chat-actions-row">
+        <div style="display:flex;gap:12px;align-items:center">
+          <div style="font-weight:700">Chat</div>
+          <div class="hint">Encrypted — private rooms</div>
+        </div>
+        <div style="position:relative">
+          <button id="roomBtn" class="nav-btn" onclick="toggleRoomMenu(event)" title="Rooms">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h18M3 6h12M3 18h12"></path></svg>
+          </button>
+          <div id="roomMenu" class="room-menu" style="display:none; right:0;">
+            <button onclick="showCreateRoomUI()">Create new Chat Room</button>
+            <button onclick="showJoinRoomUI()">Join existing Chat Room</button>
+            <button onclick="showRoomsList()">View recent Chat Rooms</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- room area: create/join/list when chat first selected -->
+      <div id="chatRoomArea" style="margin-top:10px"></div>
+
+      <!-- chat window (hidden until a room is active) -->
+      <div id="chatWindowContainer" style="display:none; margin-top:12px">
+        <div class="chat-window">
+          <div class="chat-scroll" id="chatScroll"></div>
+        </div>
+
+        <div class="chat-bottom">
+          <input id="chatInput" class="chat-input" placeholder="Type a message..." />
+          <div style="position:relative">
+            <button id="chatClipBtn" class="clip-btn" onclick="toggleChatAttach()" title="Attach">📎</button>
+            <div id="chatAttachPopup" class="attach-popup" style="display:none; right:0;">
+              <button onclick="triggerChatFile('image')"><span class="glow-icon glow-photo">📸</span><span style="margin-left:8px">Photo</span></button>
+              <button onclick="triggerChatFile('video')"><span class="glow-icon glow-video">🎥</span><span style="margin-left:8px">Video</span></button>
+              <button onclick="triggerChatFile('audio')"><span class="glow-icon glow-photo">🎵</span><span style="margin-left:8px">Audio</span></button>
+              <button onclick="triggerChatFile('doc')"><span class="glow-icon glow-doc">📄</span><span style="margin-left:8px">File</span></button>
+            </div>
+          </div>
+          <button class="send-btn" onclick="sendChatMessage()">➤</button>
+        </div>
+      </div>
+
+      <!-- hidden chat file inputs -->
+      <input id="chatImageInput" class="file-hidden" type="file" accept="image/*" onchange="handleChatFiles(event,'image')">
+      <input id="chatVideoInput" class="file-hidden" type="file" accept="video/*" onchange="handleChatFiles(event,'video')">
+      <input id="chatAudioInput" class="file-hidden" type="file" accept="audio/*" onchange="handleChatFiles(event,'audio')">
+      <input id="chatDocInput" class="file-hidden" type="file" accept=".pdf,.doc,.docx,.txt" onchange="handleChatFiles(event,'doc')">
+    </div>
+
+    <!-- Notifications -->
+    <div id="notifications" class="card tab-content" style="display:none">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div style="font-weight:700">Notifications</div>
+        <div class="hint">Recent events</div>
+      </div>
+      <div id="notifList" style="margin-top:12px"></div>
+    </div>
+
+    <!-- Profile -->
+    <div id="profile" class="card tab-content" style="display:none">
+      <div style="display:flex;gap:12px;align-items:center">
+        <div id="profilePic" class="profile-pic" style="width:84px;height:84px;border-radius:14px;display:grid;place-items:center;background:#fff;color:var(--accent);font-weight:700;overflow:hidden"></div>
+        <div style="flex:1">
+          <div style="display:flex;gap:8px">
+            <input id="profileNameInput" placeholder="Display name" style="padding:10px;border-radius:10px;border:1px solid #e6e9ef;flex:1" />
+            <button class="btn-post" onclick="saveProfile()">Save</button>
+          </div>
+          <div class="hint" style="margin-top:8px">Choose a unique username and a profile photo</div>
+        </div>
+      </div>
+
+      <div style="margin-top:14px;display:flex;gap:12px;align-items:center">
+        <label for="profileUpload" style="display:inline-flex;align-items:center;gap:8px;cursor:pointer">
+          <div class="glow-icon glow-photo">📸</div>
+          <div class="hint">Upload profile photo</div>
+        </label>
+        <input id="profileUpload" class="file-hidden" type="file" accept="image/*" onchange="handleProfileUpload(event)">
+      </div>
+
+      <div style="margin-top:12px">
+        <div style="font-weight:700;margin-bottom:8px">Account</div>
+        <div class="hint">Usernames must be unique. The profile photo will update across the app immediately.</div>
+        <div id="usernameError" style="color:#c53030;margin-top:8px;display:none"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Right column simplified: online box only -->
+  <aside class="right" style="display:flex;flex-direction:column;gap:12px">
+    <div class="card" id="onlineCard" style="display:block">
+      <div class="section-title">Online</div>
+      <div id="onlineList" class="online-list"></div>
+    </div>
+  </aside>
+</main>
+
+<footer id="siteFooter">© 2025 SKIDEEY</footer>
+
+<script>
+/* -------------------------
+   Storage keys and state
+   ------------------------- */
+const KEYS = {
+  users: 'sk_users_v2',
+  posts: 'sk_posts_v2',
+  notifs: 'sk_notifs_v2',
+  rooms: 'sk_rooms_v2'
+};
+
+const state = {
+  users: JSON.parse(localStorage.getItem(KEYS.users) || '[]'),
+  posts: JSON.parse(localStorage.getItem(KEYS.posts) || '[]'),
+  notifs: JSON.parse(localStorage.getItem(KEYS.notifs) || '[]'),
+  rooms: JSON.parse(localStorage.getItem(KEYS.rooms) || '[]')
+};
+
+let currentUser = JSON.parse(localStorage.getItem('sk_current_user') || 'null');
+if(!currentUser){
+  currentUser = { name: 'User', avatar: null };
+  localStorage.setItem('sk_current_user', JSON.stringify(currentUser));
+}
+
+/* helper selectors */
+const $ = s => document.querySelector(s);
+const $$ = s => Array.from(document.querySelectorAll(s));
+const saveState = () => {
+  localStorage.setItem(KEYS.users, JSON.stringify(state.users));
+  localStorage.setItem(KEYS.posts, JSON.stringify(state.posts));
+  localStorage.setItem(KEYS.notifs, JSON.stringify(state.notifs));
+  localStorage.setItem(KEYS.rooms, JSON.stringify(state.rooms));
+  localStorage.setItem('sk_current_user', JSON.stringify(currentUser));
+};
+const nowISO = () => new Date().toISOString();
+const escapeHtml = s => String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+/* nav click */
+function navClick(e){
+  const btn = e.currentTarget;
+  const tab = btn.dataset.tab;
+  // set active look
+  $$('.nav-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  // display selected tab content
+  $$('.tab-content').forEach(t=>t.style.display='none');
+  $('#' + tab).style.display = 'block';
+  // footer hide on chat
+  $('#siteFooter').classList.toggle('hidden', tab === 'chat');
+  // if chat tab, show room menu options area (not chat window until room selected)
+  if(tab === 'chat'){
+    renderChatRoomArea();
+  } else {
+    // hide room UI & stop chat poll if any
+    hideRoomMenu();
+  }
+}
+
+/* -------------------------
+   PROFILE
+   ------------------------- */
+function renderProfilePic(){
+  const el = $('#profilePic'); el.innerHTML = '';
+  if(currentUser.avatar){
+    const img = document.createElement('img'); img.src = currentUser.avatar; img.style.width='100%'; img.style.height='100%'; img.style.objectFit='cover';
+    el.appendChild(img);
+  } else {
+    el.textContent = (currentUser.name||'U').slice(0,2).toUpperCase();
+  }
+
+  // composer avatar
+  const comp = $('#composerAvatar'); comp.innerHTML = '';
+  if(currentUser.avatar){
+    const img = document.createElement('img'); img.src = currentUser.avatar; img.style.width='100%'; img.style.height='100%'; img.style.objectFit='cover';
+    comp.appendChild(img);
+  } else {
+    comp.textContent = (currentUser.name||'U').slice(0,2).toUpperCase();
+  }
+
+  $('#composerName').textContent = currentUser.name || 'Your Name';
+}
+
+function handleProfileUpload(e){
+  const f = e.target.files && e.target.files[0];
+  if(!f) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    currentUser.avatar = ev.target.result;
+    renderProfilePic();
+    // If user is registered (exists in state.users), update their record and propagate
+    const rec = state.users.find(u => u.name.toLowerCase() === (currentUser.name||'').toLowerCase());
+    if(rec) rec.avatar = currentUser.avatar;
+    saveState();
+    renderPosts();
+    renderOnlineList();
+    pushNotif(`${currentUser.name} updated profile photo`);
+  };
+  reader.readAsDataURL(f);
+}
+
+/* save profile with uniqueness check */
+function saveProfile(){
+  const name = $('#profileNameInput').value.trim();
+  if(!name) { showUsernameError('Please enter a display name'); return; }
+  const taken = state.users.some(u=>u.name.toLowerCase() === name.toLowerCase() && u.name.toLowerCase() !== (currentUser.name||'').toLowerCase());
+  if(taken){ showUsernameError('Username already taken. Choose another.'); return; }
+  hideUsernameError();
+  // update currentUser and register in user list (or update)
+  // remove old entry if existed
+  state.users = state.users.filter(u => u.name.toLowerCase() !== (currentUser.name||'').toLowerCase());
+  currentUser.name = name;
+  // store avatar if present
+  const rec = { name: currentUser.name, avatar: currentUser.avatar || null };
+  state.users.push(rec);
+  saveState();
+  renderProfilePic();
+  renderPosts();
+  renderOnlineList();
+  pushNotif(`${currentUser.name} updated profile`);
+}
+function showUsernameError(msg){ $('#usernameError').textContent = msg; $('#usernameError').style.display = 'block'; }
+function hideUsernameError(){ $('#usernameError').style.display = 'none'; }
+
+/* -------------------------
+   KIDIY: attachments & posts
+   ------------------------- */
+let kidiyPending = { media: [] }; // [{type,url,name}]
+
+function toggleKidiyAttach(){
+  const p = $('#kidiyAttachPopup');
+  p.style.display = (p.style.display === 'block') ? 'none' : 'block';
+}
+function triggerKidiyFile(type){
+  $('#kidiyAttachPopup').style.display='none';
+  if(type==='image') $('#kidiyImageInput').click();
+  if(type==='video') $('#kidiyVideoInput').click();
+  if(type==='audio') $('#kidiyAudioInput').click();
+  if(type==='doc') $('#kidiyDocInput').click();
+}
+function handleKidiyFiles(e,type){
+  const f = e.target.files && e.target.files[0]; if(!f) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    kidiyPending.media.push({ type, url: ev.target.result, name: f.name });
+    renderKidiyPreview();
+  };
+  reader.readAsDataURL(f);
+}
+function renderKidiyPreview(){
+  const where = $('#kidiyPreview'); where.innerHTML = '';
+  kidiyPending.media.forEach((m, idx)=>{
+    const wrap = document.createElement('div'); wrap.style.display='flex'; wrap.style.flexDirection='column'; wrap.style.alignItems='center';
+    if(m.type==='image'){ const img=document.createElement('img'); img.src=m.url; img.style.width='120px'; img.style.height='88px'; img.style.objectFit='cover'; img.style.borderRadius='8px'; wrap.appendChild(img); }
+    else if(m.type==='video'){ const v=document.createElement('video'); v.src=m.url; v.controls=true; v.style.width='150px'; v.style.height='96px'; v.style.borderRadius='8px'; wrap.appendChild(v); }
+    else if(m.type==='audio'){ const a=document.createElement('audio'); a.src=m.url; a.controls=true; wrap.appendChild(a); }
+    else { const a=document.createElement('a'); a.href=m.url; a.textContent = m.name || 'file'; a.target='_blank'; a.style.display='inline-block'; a.style.padding='6px'; a.style.border='1px solid #e6e9ef'; a.style.borderRadius='8px'; wrap.appendChild(a); }
+    const rm = document.createElement('button'); rm.textContent='✕'; rm.style.marginTop='6px'; rm.style.border='none'; rm.style.background='transparent'; rm.style.cursor='pointer';
+    rm.onclick = ()=>{ kidiyPending.media.splice(idx,1); renderKidiyPreview(); };
+    wrap.appendChild(rm);
+    where.appendChild(wrap);
+  });
+}
+function createKidiyPost(){
+  const text = $('#kidiyText').value.trim();
+  if(!text && kidiyPending.media.length===0){ alert('Add text or media to post'); return; }
+  const post = { id: Date.now(), author: currentUser.name, authorAvatar: currentUser.avatar || null, text, media: kidiyPending.media.slice(), ts: nowISO() };
+  state.posts.unshift(post);
+  saveState();
+  $('#kidiyText').value=''; kidiyPending.media = []; renderKidiyPreview(); renderPosts(); pushNotif(`${currentUser.name} posted on KIDIY`);
+}
+function renderPosts(){
+  const list = $('#postsList'); list.innerHTML='';
+  state.posts.forEach(p=>{
+    const el = document.createElement('div'); el.className='post';
+    const avatar = document.createElement('div'); avatar.className='avatar';
+    if(p.authorAvatar){ const img=document.createElement('img'); img.src=p.authorAvatar; img.style.width='100%'; img.style.height='100%'; img.style.objectFit='cover'; avatar.appendChild(img); } else { avatar.textContent = (p.author||'U').slice(0,2).toUpperCase(); }
+    const body = document.createElement('div'); body.className='post-body';
+    body.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:flex-start">
+                        <div>
+                          <div style="font-weight:700">${escapeHtml(p.author)}</div>
+                          <div class="meta">${new Date(p.ts).toLocaleString()}</div>
+                        </div>
+                      </div>
+                      <div class="text">${escapeHtml(p.text||'')}</div>`;
+    if(p.media && p.media.length){
+      const gm = document.createElement('div'); gm.style.marginTop='8px'; gm.style.display='flex'; gm.style.gap='8px'; gm.style.flexWrap='wrap';
+      p.media.forEach(m=>{
+        if(m.type==='image'){ const img=document.createElement('img'); img.src=m.url; img.style.maxWidth='220px'; img.style.borderRadius='8px'; gm.appendChild(img); }
+        else if(m.type==='video'){ const v=document.createElement('video'); v.src=m.url; v.controls=true; v.style.maxWidth='320px'; v.style.borderRadius='8px'; gm.appendChild(v); }
+        else if(m.type==='audio'){ const a=document.createElement('audio'); a.src=m.url; a.controls=true; gm.appendChild(a); }
+        else { const a=document.createElement('a'); a.href=m.url; a.target='_blank'; a.textContent = m.name || 'File'; a.style.display='inline-block'; a.style.padding='8px'; a.style.border='1px solid #e6e9ef'; a.style.borderRadius='8px'; a.style.background='#fff'; gm.appendChild(a); }
+      });
+      body.appendChild(gm);
+    }
+    el.appendChild(avatar); el.appendChild(body); list.appendChild(el);
+  });
+}
+
+/* -------------------------
+   Notifications
+   ------------------------- */
+function pushNotif(text){
+  const n = { id: Date.now(), text, ts: nowISO() };
+  state.notifs.unshift(n);
+  saveState();
+  renderNotifs();
+}
+function renderNotifs(){
+  const el = $('#notifList'); el.innerHTML='';
+  if(state.notifs.length===0){ el.textContent = 'No notifications'; return; }
+  state.notifs.forEach(n=>{
+    const d = document.createElement('div'); d.style.marginBottom='10px'; d.style.padding='10px'; d.style.borderRadius='8px'; d.style.background='#fff'; d.style.border='1px solid rgba(2,6,23,0.03)';
+    d.innerHTML = `<div style="font-weight:700">${escapeHtml(n.text)}</div><div class="hint" style="margin-top:6px">${new Date(n.ts).toLocaleString()}</div>`;
+    el.appendChild(d);
+  });
+}
+
+/* -------------------------
+   Online list
+   ------------------------- */
+function renderOnlineList(){
+  const el = $('#onlineList'); el.innerHTML='';
+  state.users.forEach(u=>{
+    if(u.name === currentUser.name) return;
+    const row = document.createElement('div'); row.className='online-item';
+    const av = document.createElement('div'); av.className='avatar-sm';
+    if(u.avatar){ const img=document.createElement('img'); img.src=u.avatar; img.style.width='100%'; img.style.height='100%'; img.style.objectFit='cover'; av.appendChild(img); } else av.textContent = (u.name||'U').slice(0,2).toUpperCase();
+    const nm = document.createElement('div'); nm.textContent = u.name;
+    row.appendChild(av); row.appendChild(nm); el.appendChild(row);
+  });
+}
+
+/* -------------------------
+   CHAT: Dropdown & Room UI
+   ------------------------- */
+function toggleRoomMenu(e){
+  e.stopPropagation();
+  const rm = $('#roomMenu'); rm.style.display = (rm.style.display === 'block') ? 'none' : 'block';
+}
+function hideRoomMenu(){ $('#roomMenu').style.display='none'; $('#kidiyAttachPopup').style.display='none'; $('#chatAttachPopup').style.display='none'; }
+document.addEventListener('click', () => { hideRoomMenu(); });
+
+/* chatRoomArea controls */
+function renderChatRoomArea(){
+  const area = $('#chatRoomArea');
+  area.innerHTML = '';
+  // show options (create/join/view)
+  const wrapper = document.createElement('div');
+  wrapper.style.display='flex'; wrapper.style.flexDirection='column'; wrapper.style.gap='10px';
+  const btnCreate = document.createElement('button'); btnCreate.textContent='Create New Chat Room'; btnCreate.className='btn-post'; btnCreate.onclick = showCreateRoomUI;
+  const btnJoin = document.createElement('button'); btnJoin.textContent='Join Existing Chat Room'; btnJoin.className='btn-post'; btnJoin.onclick = showJoinRoomUI;
+  const btnView = document.createElement('button'); btnView.textContent='View Recent Chat Rooms'; btnView.className='btn-post'; btnView.onclick = showRoomsList;
+  wrapper.appendChild(btnCreate); wrapper.appendChild(btnJoin); wrapper.appendChild(btnView);
+  area.appendChild(wrapper);
+}
+
+/* show forms */
+function showCreateRoomUI(){
+  hideRoomMenu();
+  const area = $('#chatRoomArea'); area.innerHTML = '';
+  const card = document.createElement('div'); card.style.display='flex'; card.style.flexDirection='column'; card.style.gap='8px';
+  const rn = document.createElement('input'); rn.placeholder='Room name'; rn.style.padding='10px'; rn.style.borderRadius='10px'; rn.style.border='1px solid #e6e9ef';
+  const rp = document.createElement('input'); rp.placeholder='Password'; rp.type='password'; rp.style.padding='10px'; rp.style.borderRadius='10px'; rp.style.border='1px solid #e6e9ef';
+  const createBtn = document.createElement('button'); createBtn.textContent='Create & Enter'; createBtn.className='btn-post';
+  createBtn.onclick = () => { const r = rn.value.trim(), p = rp.value.trim(); if(!r||!p){ alert('Enter room name and password'); return; } createRoom(r,p); };
+  card.appendChild(rn); card.appendChild(rp); card.appendChild(createBtn);
+  area.appendChild(card);
+}
+function showJoinRoomUI(){
+  hideRoomMenu();
+  const area = $('#chatRoomArea'); area.innerHTML = '';
+  const card = document.createElement('div'); card.style.display='flex'; card.style.flexDirection='column'; card.style.gap='8px';
+  const rn = document.createElement('input'); rn.placeholder='Room name'; rn.style.padding='10px'; rn.style.borderRadius='10px'; rn.style.border='1px solid #e6e9ef';
+  const rp = document.createElement('input'); rp.placeholder='Password'; rp.type='password'; rp.style.padding='10px'; rp.style.borderRadius='10px'; rp.style.border='1px solid #e6e9ef';
+  const joinBtn = document.createElement('button'); joinBtn.textContent='Join Room'; joinBtn.className='btn-post';
+  joinBtn.onclick = () => { const r = rn.value.trim(), p = rp.value.trim(); if(!r||!p){ alert('Enter room name and password'); return; } joinRoom(r,p); };
+  card.appendChild(rn); card.appendChild(rp); card.appendChild(joinBtn);
+  area.appendChild(card);
+}
+function showRoomsList(){
+  hideRoomMenu();
+  const area = $('#chatRoomArea'); area.innerHTML = '';
+  const list = document.createElement('div'); list.style.display='flex'; list.style.flexDirection='column'; list.style.gap='8px';
+  if(state.rooms.length===0){ list.textContent = 'No recent rooms'; area.appendChild(list); return; }
+  state.rooms.forEach(r=>{
+    const row = document.createElement('div'); row.style.display='flex'; row.style.justifyContent='space-between'; row.style.alignItems='center';
+    const name = document.createElement('div'); name.textContent = r.room;
+    const enter = document.createElement('button'); enter.textContent='Enter'; enter.className='btn-post'; enter.onclick = () => {
+      const pass = prompt('Enter password for ' + r.room); if(!pass) return; joinRoom(r.room, pass);
+    };
+    row.appendChild(name); row.appendChild(enter); list.appendChild(row);
+  });
+  area.appendChild(list);
+}
+
+/* create/join room functions (store rooms locally) */
+function createRoom(room, pass){
+  if(!state.rooms.some(x=>x.room===room)) state.rooms.push({room});
+  saveState();
+  startChat(room, pass);
+}
+function joinRoom(room, pass){
+  // optionally add to rooms list
+  if(!state.rooms.some(x=>x.room===room)) state.rooms.push({room});
+  saveState();
+  startChat(room, pass);
+}
+
+/* -------------------------
+   CHAT implementation (encrypted)
+   ------------------------- */
+class ChatEngine {
+  constructor(){
+    this.room = null;
+    this.password = null;
+    this.seen = new Set();
+    this.poll = null;
+    this.pendingAttachments = []; // {type,url,name}
+  }
+  key(pass){
+    // derive key (local-only approach)
+    const salt = CryptoJS.enc.Utf8.parse('skideey_fixed_salt_v1');
+    return CryptoJS.PBKDF2(pass, salt, { keySize: 256/32, iterations: 1000 });
+  }
+  encrypt(text){
+    const key = this.key(this.password);
+    const iv = CryptoJS.lib.WordArray.random(128/8);
+    const encrypted = CryptoJS.AES.encrypt(text, key, { iv });
+    return iv.toString() + encrypted.toString();
+  }
+  decrypt(payload){
+    try{
+      const iv = CryptoJS.enc.Hex.parse(payload.substr(0,32));
+      const cipher = payload.substr(32);
+      const key = this.key(this.password);
+      const dec = CryptoJS.AES.decrypt(cipher, key, { iv });
+      return dec.toString(CryptoJS.enc.Utf8);
+    } catch(e){ return null; }
+  }
+  start(room, pass){
+    this.room = room; this.password = pass;
+    $('#chatWindowContainer').style.display='block';
+    $('#chatScroll').innerHTML = '';
+    $('#chatRoomArea').innerHTML = `<div style="display:flex;gap:10px;align-items:center"><div style="font-weight:700">Room:</div><div>${room}</div></div>`;
+    // poll localStorage for messages
+    this.seen = new Set();
+    if(this.poll) clearInterval(this.poll);
+    this.poll = setInterval(()=>this.load(), 1200);
+    this.load(); pushNotif(`${currentUser.name} entered room ${room}`);
+  }
+  stop(){
+    if(this.poll) clearInterval(this.poll);
+    this.room = null; this.password = null;
+    $('#chatWindowContainer').style.display='none';
+  }
+  send(text, attachments=[]){
+    if(!this.room || !this.password){ alert('No room set'); return; }
+    const payload = JSON.stringify({ sender: currentUser.name, text, attachments, ts: nowISO() });
+    const enc = this.encrypt(payload);
+    const key = `sk_chat_${this.room}`;
+    const arr = JSON.parse(localStorage.getItem(key) || '[]');
+    const obj = { id: Date.now()+Math.random(), payload: enc };
+    arr.push(obj); localStorage.setItem(key, JSON.stringify(arr));
+    this.load(); // immediate append
+    pushNotif(`${currentUser.name} sent a message in ${this.room}`);
+  }
+  load(){
+    if(!this.room || !this.password) return;
+    const key = `sk_chat_${this.room}`;
+    const arr = JSON.parse(localStorage.getItem(key) || '[]');
+    arr.forEach(m=>{
+      if(!this.seen.has(m.id)){
+        this.seen.add(m.id);
+        const raw = this.decrypt(m.payload);
+        if(raw === null){ // decryption failed
+          // show placeholder
+          this.append({ sender: 'unknown', text: '🔒 Encrypted message (cannot decrypt)', attachments: [], ts: nowISO(), me:false });
+        } else {
+          try{
+            const parsed = JSON.parse(raw);
+            this.append({ sender: parsed.sender, text: parsed.text, attachments: parsed.attachments || [], ts: parsed.ts, me: parsed.sender === currentUser.name });
+          } catch(e){
+            this.append({ sender: 'unknown', text: raw, attachments: [], ts: nowISO(), me:false });
+          }
+        }
+      }
+    });
+  }
+  append(obj){
+    const cont = $('#chatScroll');
+    const row = document.createElement('div'); row.className='chat-row';
+    const av = document.createElement('div'); av.className='avatar';
+    const poster = state.users.find(u=>u.name.toLowerCase() === (obj.sender||'').toLowerCase());
+    if(poster && poster.avatar){ const img=document.createElement('img'); img.src = poster.avatar; img.style.width='100%'; img.style.height='100%'; img.style.objectFit='cover'; av.appendChild(img); }
+    else av.textContent = (obj.sender||'U').slice(0,2).toUpperCase();
+    const bubble = document.createElement('div'); bubble.className = 'chat-bubble ' + (obj.me ? 'me' : 'other');
+    bubble.innerHTML = `<div style="font-weight:700;font-size:13px;margin-bottom:6px">${escapeHtml(obj.sender)}</div>
+                        <div style="white-space:pre-wrap">${escapeHtml(obj.text||'')}</div>
+                        <div class="hint" style="margin-top:8px">${new Date(obj.ts).toLocaleString()}</div>`;
+    // attachments
+    if(obj.attachments && obj.attachments.length){
+      const wrap = document.createElement('div'); wrap.style.marginTop='8px'; wrap.style.display='flex'; wrap.style.gap='8px'; wrap.style.flexWrap='wrap';
+      obj.attachments.forEach(a=>{
+        if(a.type==='image'){ const i=document.createElement('img'); i.src=a.url; i.style.width='140px'; i.style.borderRadius='8px'; wrap.appendChild(i); }
+        else if(a.type==='video'){ const v=document.createElement('video'); v.src=a.url; v.controls=true; v.style.width='180px'; v.style.borderRadius='8px'; wrap.appendChild(v); }
+        else if(a.type==='audio'){ const au=document.createElement('audio'); au.src=a.url; au.controls=true; wrap.appendChild(au); }
+        else { const link=document.createElement('a'); link.href=a.url; link.target='_blank'; link.textContent=a.name||'file'; link.style.padding='6px'; link.style.border='1px solid #e6e9ef'; link.style.borderRadius='8px'; link.style.background='#fff'; wrap.appendChild(link); }
+      });
+      bubble.appendChild(wrap);
+    }
+
+    row.appendChild(av);
+    row.appendChild(bubble);
+    cont.appendChild(row);
+    cont.scrollTop = cont.scrollHeight;
+  }
+}
+
+let chatEngine = new ChatEngine();
+
+/* chat attach popup toggles */
+function toggleChatAttach(){ const p = $('#chatAttachPopup'); p.style.display = p.style.display === 'block' ? 'none' : 'block'; }
+function triggerChatFile(type){ $('#chatAttachPopup').style.display='none'; if(type==='image') $('#chatImageInput').click(); if(type==='video') $('#chatVideoInput').click(); if(type==='audio') $('#chatAudioInput').click(); if(type==='doc') $('#chatDocInput').click(); }
+
+let chatPendingAttachments = [];
+function handleChatFiles(e,type){
+  const f = e.target.files && e.target.files[0]; if(!f) return;
+  const r = new FileReader(); r.onload = ev => { chatPendingAttachments.push({ type, url: ev.target.result, name: f.name }); };
+  r.readAsDataURL(f);
+}
+function sendChatMessage(){
+  const text = $('#chatInput').value.trim();
+  if(!text && chatPendingAttachments.length===0) return;
+  chatEngine.send(text, chatPendingAttachments.slice());
+  chatPendingAttachments = [];
+  $('#chatInput').value = '';
+}
+
+/* when starting chat after creating/joining room */
+function startChat(room, pass){
+  chatEngine.start(room, pass);
+  $('#roomMenu').style.display='none';
+  // show chat area
+  $('#chatWindowContainer').style.display='block';
+}
+
+/* helper wrappers */
+function startChatFromCreate(room, pass){ chatEngine.start(room, pass); }
+function chatLoadAllRoomsMessages(){ chatEngine.load(); }
+
+/* -------------------------
+   Profile upload wiring
+   ------------------------- */
+function handleProfileUpload(e){ const f=e.target.files && e.target.files[0]; if(!f) return; const r=new FileReader(); r.onload = ev=>{ currentUser.avatar = ev.target.result; renderProfilePic(); // update state.users if exists
+  const rec = state.users.find(u=>u.name.toLowerCase()===(currentUser.name||'').toLowerCase()); if(rec) { rec.avatar = currentUser.avatar; saveState(); renderPosts(); renderOnlineList(); } saveState(); pushNotif(`${currentUser.name} updated profile photo`); }; r.readAsDataURL(f); }
+
+/* -------------------------
+   Quick utilities
+   ------------------------- */
+function renderInitialUI(){
+  // composer and profile name
+  $('#composerName').textContent = currentUser.name || 'Your Name';
+  $('#profileNameInput').value = currentUser.name || '';
+  renderProfilePic();
+  renderPosts();
+  renderNotifs();
+  renderOnlineList();
+  $('#kidiyAttachPopup').style.display = 'none';
+  $('#chatAttachPopup').style.display = 'none';
+}
+function pushInitialDataIfNeeded(){ /* intentionally empty - no demo/sample data */ }
+
+function clearAllLocal(){ if(!confirm('Clear all local data?')) return; localStorage.removeItem(KEYS.posts); localStorage.removeItem(KEYS.users); localStorage.removeItem(KEYS.notifs); localStorage.removeItem(KEYS.rooms); localStorage.removeItem('sk_current_user'); location.reload(); }
+
+/* -------------------------
+   Init
+   ------------------------- */
+document.addEventListener('DOMContentLoaded', ()=>{
+  renderInitialUI();
+});
+
+/* Expose a few functions to window for inline handlers */
+window.toggleKidiyAttach = toggleKidiyAttach;
+window.triggerKidiyFile = triggerKidiyFile;
+window.handleKidiyFiles = handleKidiyFiles;
+window.createKidiyPost = createKidiyPost;
+window.toggleChatAttach = toggleChatAttach;
+window.triggerChatFile = triggerChatFile;
+window.handleChatFiles = handleChatFiles;
+window.sendChatMessage = sendChatMessage;
+window.navClick = navClick;
+window.toggleRoomMenu = toggleRoomMenu;
+window.showCreateRoomUI = showCreateRoomUI;
+window.showJoinRoomUI = showJoinRoomUI;
+window.showRoomsList = showRoomsList;
+window.createRoom = createRoom;
+window.joinRoom = joinRoom;
+window.startChat = startChat;
+window.clearAllLocal = clearAllLocal;
+window.handleProfileUpload = handleProfileUpload;
+window.saveProfile = saveProfile;
+
+</script>
+</body>
+</html>
