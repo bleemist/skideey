@@ -1,0 +1,1313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>SKIDEEY | KIDIY</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+  <style>
+    :root {
+      --primary: #ff7a2d;
+      --secondary: #2a5298;
+      --accent: #ff4f04;
+      --bg-dark: #121212;
+      --bg-light: #1f1f1f;
+      --text: #fff;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      font-family: 'Poppins', sans-serif;
+      margin: 0;
+      background: linear-gradient(135deg, var(--bg-light), var(--secondary));
+      color: var(--text);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+    }
+
+    header {
+      width: 100%;
+      background: rgba(255,255,255,0.1);
+      backdrop-filter: blur(10px);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1rem 2rem;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .logo {
+      font-size: 1.8rem;
+      font-weight: 800;
+      letter-spacing: 1px;
+      text-shadow: 0 0 10px var(--primary);
+    }
+
+    nav button {
+      background: none;
+      border: none;
+      color: var(--text);
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      margin-left: 15px;
+      padding: 8px 15px;
+      border-radius: 8px;
+      transition: 0.3s;
+    }
+
+    nav button.active, nav button:hover {
+      background: var(--primary);
+      color: #fff;
+    }
+
+    .tab {
+      display: none;
+      width: 90%;
+      max-width: 800px;
+      margin: 20px auto;
+      background: rgba(255,255,255,0.05);
+      border-radius: 15px;
+      padding: 20px;
+      box-shadow: 0 0 15px rgba(0,0,0,0.4);
+    }
+
+    .active-tab { display: block; }
+
+    textarea, input {
+      width: 100%;
+      padding: 10px;
+      border-radius: 8px;
+      border: none;
+      margin-top: 10px;
+      background: rgba(255,255,255,0.1);
+      color: #fff;
+      font-size: 1rem;
+    }
+
+    textarea::placeholder, input::placeholder {
+      color: rgba(255,255,255,0.7);
+    }
+
+    button.action {
+      background: linear-gradient(90deg, var(--primary), var(--accent));
+      border: none;
+      color: white;
+      padding: 10px 20px;
+      border-radius: 10px;
+      cursor: pointer;
+      margin-top: 10px;
+      font-weight: 600;
+      transition: 0.3s;
+    }
+
+    button.action:hover {
+      opacity: 0.9;
+      transform: scale(1.03);
+    }
+
+    button.action:disabled {
+      background: #666;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .post {
+      background: rgba(255,255,255,0.08);
+      border-radius: 12px;
+      padding: 15px;
+      margin-top: 15px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.3);
+    }
+
+    .post .author {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .post .author img {
+      width: 45px;
+      height: 45px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 2px solid var(--primary);
+    }
+
+    .post-content {
+      margin-top: 10px;
+      line-height: 1.5;
+    }
+
+    .post img.media {
+      width: 100%;
+      max-height: 400px;
+      border-radius: 10px;
+      margin-top: 10px;
+      object-fit: cover;
+    }
+
+    .post-stats {
+      display: flex;
+      gap: 20px;
+      margin-top: 15px;
+      padding-top: 15px;
+      border-top: 1px solid rgba(255,255,255,0.1);
+    }
+
+    .stat {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      cursor: pointer;
+      padding: 5px 10px;
+      border-radius: 5px;
+      transition: 0.3s;
+    }
+
+    .stat:hover {
+      background: rgba(255,255,255,0.1);
+    }
+
+    .stat.active {
+      color: var(--primary);
+    }
+
+    .comments-section {
+      margin-top: 15px;
+      padding-top: 15px;
+      border-top: 1px solid rgba(255,255,255,0.1);
+    }
+
+    .comment {
+      background: rgba(255,255,255,0.05);
+      padding: 10px;
+      border-radius: 8px;
+      margin-bottom: 10px;
+    }
+
+    .comment-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 5px;
+    }
+
+    .comment-header img {
+      width: 25px;
+      height: 25px;
+      border-radius: 50%;
+    }
+
+    .comment-input {
+      display: flex;
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    .comment-input input {
+      flex: 1;
+      margin-top: 0;
+    }
+
+    .chat-section {
+      background: rgba(255,255,255,0.05);
+      padding: 15px;
+      border-radius: 10px;
+      margin-bottom: 15px;
+    }
+
+    .room-item {
+      background: rgba(255,255,255,0.08);
+      padding: 12px;
+      border-radius: 8px;
+      margin-bottom: 10px;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+
+    .room-item:hover {
+      background: rgba(255,255,255,0.12);
+    }
+
+    .room-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 5px;
+    }
+
+    .room-name {
+      font-weight: bold;
+      color: var(--primary);
+    }
+
+    .room-stats {
+      font-size: 0.8rem;
+      color: rgba(255,255,255,0.7);
+    }
+
+    .room-description {
+      font-size: 0.9rem;
+      color: rgba(255,255,255,0.8);
+      margin-bottom: 5px;
+    }
+
+    .room-creator {
+      font-size: 0.8rem;
+      color: rgba(255,255,255,0.6);
+    }
+
+    .private-room {
+      border-left: 3px solid #ff4757;
+    }
+
+    .public-room {
+      border-left: 3px solid #2ed573;
+    }
+
+    .chat-box {
+      background: rgba(255,255,255,0.1);
+      border-radius: 10px;
+      padding: 10px;
+      height: 300px;
+      overflow-y: auto;
+      margin-top: 10px;
+      margin-bottom: 10px;
+    }
+
+    .message {
+      background: rgba(255,255,255,0.15);
+      margin: 8px 0;
+      padding: 10px;
+      border-radius: 8px;
+      border-left: 3px solid var(--primary);
+    }
+
+    .message .sender {
+      font-weight: bold;
+      color: var(--primary);
+      margin-bottom: 5px;
+    }
+
+    .profile-preview img {
+      width: 100px;
+      height: 100px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 3px solid var(--primary);
+      margin-bottom: 15px;
+    }
+
+    .center {
+      text-align: center;
+    }
+
+    .user-status {
+      background: rgba(255,255,255,0.1);
+      padding: 10px;
+      border-radius: 8px;
+      margin: 10px 0;
+      text-align: center;
+    }
+
+    .auth-form {
+      background: rgba(255,255,255,0.05);
+      padding: 20px;
+      border-radius: 10px;
+      margin: 15px 0;
+    }
+
+    .auth-tabs {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 15px;
+    }
+
+    .auth-tab {
+      flex: 1;
+      padding: 10px;
+      text-align: center;
+      background: rgba(255,255,255,0.1);
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    .auth-tab.active {
+      background: var(--primary);
+    }
+
+    .file-upload-section {
+      margin: 20px 0;
+      padding: 15px;
+      background: rgba(255,255,255,0.05);
+      border-radius: 10px;
+    }
+
+    .current-room {
+      background: var(--primary);
+      padding: 5px 10px;
+      border-radius: 20px;
+      font-size: 0.9rem;
+      margin-left: 10px;
+    }
+
+    .loading {
+      text-align: center;
+      color: var(--text);
+      padding: 20px;
+    }
+
+    .error {
+      background: rgba(239, 68, 68, 0.2);
+      color: #ff6b6b;
+      padding: 10px;
+      border-radius: 8px;
+      margin: 10px 0;
+      border-left: 3px solid #ff6b6b;
+    }
+
+    .success {
+      background: rgba(16, 185, 129, 0.2);
+      color: #10b981;
+      padding: 10px;
+      border-radius: 8px;
+      margin: 10px 0;
+      border-left: 3px solid #10b981;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="logo">💬 SKIDEEY</div>
+    <nav>
+      <button id="tabKidiy" class="active" onclick="switchTab('kidiy')">KIDIY</button>
+      <button onclick="switchTab('chat')">Chat</button>
+      <button onclick="switchTab('profile')">Profile</button>
+    </nav>
+  </header>
+
+  <!-- 📰 KIDIY FEED -->
+  <section id="kidiy" class="tab active-tab">
+    <h2>KIDIY Feed</h2>
+    
+    <div class="user-status" id="feedStatus">
+      🔍 Viewing posts as guest. <a href="#" onclick="switchTab('profile'); return false;">Login to post and interact</a>
+    </div>
+
+    <!-- Post Creator (only for logged in users) -->
+    <div id="postCreator" style="display: none;">
+      <textarea id="postContent" placeholder="Share something..."></textarea>
+      <input type="file" id="media" multiple accept="image/*,video/*">
+      <button class="action" onclick="createPost()">Post</button>
+    </div>
+
+    <div id="posts"></div>
+  </section>
+
+  <!-- 💬 CHAT -->
+  <section id="chat" class="tab">
+    <h2>Live Chat</h2>
+    
+    <div class="user-status" id="chatStatus">
+      🔒 Please login to access chat
+    </div>
+
+    <div id="chatInterface" style="display: none;">
+      <!-- Room Management Tabs -->
+      <div class="auth-tabs" style="margin-bottom: 15px;">
+        <div class="auth-tab active" id="joinRoomTab" onclick="switchChatTab('join')">Join Room</div>
+        <div class="auth-tab" id="createRoomTab" onclick="switchChatTab('create')">Create Room</div>
+        <div class="auth-tab" id="roomsListTab" onclick="switchChatTab('list')">Browse Rooms</div>
+      </div>
+
+      <!-- Join Room Section -->
+      <div id="joinRoomSection" class="chat-section">
+        <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 15px;">
+          <input id="roomName" placeholder="Enter room name to join" style="flex: 1;">
+          <button class="action" onclick="joinRoom()">Join Room</button>
+        </div>
+        
+        <div id="passwordSection" style="display: none; margin-bottom: 15px;">
+          <input type="password" id="roomPassword" placeholder="Room password">
+          <button class="action" onclick="joinRoomWithPassword()">Join with Password</button>
+        </div>
+      </div>
+
+      <!-- Create Room Section -->
+      <div id="createRoomSection" class="chat-section" style="display: none;">
+        <input type="text" id="newRoomName" placeholder="Room name (3-20 characters)" style="margin-bottom: 10px;">
+        <input type="text" id="roomDescription" placeholder="Room description (optional)" style="margin-bottom: 10px;">
+        
+        <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+          <label style="display: flex; align-items: center; gap: 5px;">
+            <input type="checkbox" id="isPrivateRoom" onchange="togglePasswordField()">
+            Private Room
+          </label>
+          
+          <input type="number" id="roomMaxUsers" placeholder="Max users" min="2" max="500" value="100" 
+                 style="width: 120px; margin-bottom: 0;">
+        </div>
+        
+        <div id="roomPasswordSection" style="display: none; margin-bottom: 15px;">
+          <input type="password" id="newRoomPassword" placeholder="Room password (min 4 characters)">
+        </div>
+        
+        <button class="action" onclick="createRoom()">Create Room</button>
+      </div>
+
+      <!-- Rooms List Section -->
+      <div id="roomsListSection" class="chat-section" style="display: none;">
+        <div id="roomsLoading" class="loading">Loading rooms...</div>
+        <div id="roomsContainer" style="display: none;">
+          <h4>Public Rooms</h4>
+          <div id="roomsList"></div>
+        </div>
+        <button class="action" onclick="loadRooms()" style="margin-top: 10px;">Refresh Rooms</button>
+      </div>
+
+      <!-- Current Room Info -->
+      <div id="currentRoomInfo" style="margin: 15px 0; padding: 10px; background: rgba(255,255,255,0.1); border-radius: 8px; display: none;">
+        <div style="display: flex; justify-content: between; align-items: center;">
+          <div>
+            <strong>Currently in room:</strong> <span id="currentRoomName"></span>
+            <span id="roomUserCount" style="margin-left: 10px; font-size: 0.9rem; color: rgba(255,255,255,0.7);"></span>
+          </div>
+          <button class="action" onclick="leaveRoom()" style="background: #666; padding: 5px 10px; font-size: 0.9rem;">Leave Room</button>
+        </div>
+        <div id="roomDescriptionDisplay" style="font-size: 0.9rem; margin-top: 5px;"></div>
+      </div>
+
+      <!-- Chat Box -->
+      <div class="chat-box" id="chatBox">
+        <div class="loading">Join a room to start chatting...</div>
+      </div>
+
+      <!-- Message Input -->
+      <div id="messageInputSection" style="display: none;">
+        <input id="chatMessage" placeholder="Type your message..." onkeypress="handleChatKeypress(event)">
+        <input type="file" id="chatMedia" multiple accept="image/*,video/*">
+        <button class="action" onclick="sendMessage()">Send Message</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- 👤 PROFILE -->
+  <section id="profile" class="tab center">
+    <h2>Your Profile</h2>
+    
+    <div class="user-status" id="profileStatus">
+      Create an account or login to get started
+    </div>
+
+    <!-- Authentication Section -->
+    <div class="auth-form">
+      <div class="auth-tabs">
+        <div class="auth-tab active" id="loginTab" onclick="switchAuthTab('login')">Login</div>
+        <div class="auth-tab" id="registerTab" onclick="switchAuthTab('register')">Register</div>
+      </div>
+
+      <div id="loginForm">
+        <input type="text" id="loginUsername" placeholder="Username">
+        <input type="password" id="loginPassword" placeholder="Password">
+        <button class="action" onclick="login()">Login</button>
+      </div>
+
+      <div id="registerForm" style="display: none;">
+        <input type="text" id="registerUsername" placeholder="Choose username">
+        <input type="password" id="registerPassword" placeholder="Password (min 6 characters)">
+        <button class="action" onclick="register()">Create Account</button>
+      </div>
+    </div>
+
+    <!-- Profile Management (only for logged in users) -->
+    <div id="profileManagement" style="display: none;">
+      <div class="profile-preview">
+        <img src="https://cdn-icons-png.flaticon.com/512/847/847969.png" alt="profile" id="profileImageDisplay">
+      </div>
+      
+      <div class="file-upload-section">
+        <h3>Upload Profile Picture</h3>
+        <input type="file" id="profileImageInput" accept="image/*">
+        <button class="action" onclick="uploadProfile()">Upload Profile Picture</button>
+      </div>
+
+      <div class="file-upload-section">
+        <h3>Upload Files</h3>
+        <input type="file" id="fileUpload" multiple>
+        <button class="action" onclick="uploadFiles()">Upload Files</button>
+        <div id="uploadedFiles"></div>
+      </div>
+
+      <div id="profileInfo">
+        <h4>Account Information</h4>
+        <p>Username: <strong id="currentUsername"></strong></p>
+        <p>Member since: <span id="memberSince"></span></p>
+        <button class="action" onclick="logout()" style="background: #666; margin-top: 20px;">Logout</button>
+      </div>
+    </div>
+  </section>
+
+  <script>
+    const api = window.location.origin;
+    const socket = io(api, {
+      transports: ['websocket', 'polling']
+    });
+    
+    let currentUser = null;
+    let token = localStorage.getItem('skideey_token');
+    let currentRoom = null;
+    let currentRoomInfo = null;
+
+    // Initialize the app
+    document.addEventListener('DOMContentLoaded', function() {
+      if (token) {
+        verifyToken();
+      } else {
+        updateUI();
+        loadPosts();
+      }
+    });
+
+    // Verify token on load
+    async function verifyToken() {
+      try {
+        if (token) {
+          const userData = JSON.parse(localStorage.getItem('skideey_user'));
+          if (userData) {
+            currentUser = userData;
+            updateUI();
+            loadPosts();
+          }
+        }
+      } catch (err) {
+        logout();
+      }
+    }
+
+    // 🔄 Tab Switching
+    function switchTab(id) {
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active-tab'));
+      document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+      document.getElementById(id).classList.add('active-tab');
+      event.target.classList.add('active');
+      
+      if (id === 'kidiy') {
+        loadPosts();
+      }
+    }
+
+    // Auth tab switching
+    function switchAuthTab(tab) {
+      document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
+      document.getElementById(tab + 'Tab').classList.add('active');
+      
+      document.getElementById('loginForm').style.display = tab === 'login' ? 'block' : 'none';
+      document.getElementById('registerForm').style.display = tab === 'register' ? 'block' : 'none';
+    }
+
+    // Chat tab switching
+    function switchChatTab(tab) {
+      document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
+      document.getElementById(tab + 'RoomTab').classList.add('active');
+      
+      document.getElementById('joinRoomSection').style.display = tab === 'join' ? 'block' : 'none';
+      document.getElementById('createRoomSection').style.display = tab === 'create' ? 'block' : 'none';
+      document.getElementById('roomsListSection').style.display = tab === 'list' ? 'block' : 'none';
+      
+      if (tab === 'list') {
+        loadRooms();
+      }
+    }
+
+    // Toggle password field for room creation
+    function togglePasswordField() {
+      const isPrivate = document.getElementById('isPrivateRoom').checked;
+      document.getElementById('roomPasswordSection').style.display = isPrivate ? 'block' : 'none';
+    }
+
+    // ✅ Register
+    async function register() {
+      const username = document.getElementById("registerUsername").value.trim();
+      const password = document.getElementById("registerPassword").value;
+
+      if (!username || !password) {
+        return alert("Please enter username and password");
+      }
+
+      if (password.length < 6) {
+        return alert("Password must be at least 6 characters");
+      }
+
+      try {
+        const res = await fetch("/api/register", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ username, password })
+        });
+        
+        const data = await res.json();
+        if (data.error) return alert("Error: " + data.error);
+
+        // Save token and user data
+        token = data.token;
+        currentUser = data.user;
+        localStorage.setItem('skideey_token', token);
+        localStorage.setItem('skideey_user', JSON.stringify(data.user));
+        
+        document.getElementById('profileStatus').innerHTML = '<div class="success">Account created successfully!</div>';
+        updateUI();
+        
+      } catch (err) {
+        alert("Error creating account: " + err.message);
+      }
+    }
+
+    // ✅ Login
+    async function login() {
+      const username = document.getElementById("loginUsername").value.trim();
+      const password = document.getElementById("loginPassword").value;
+
+      if (!username || !password) {
+        return alert("Please enter username and password");
+      }
+
+      try {
+        const res = await fetch("/api/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ username, password })
+        });
+        
+        const data = await res.json();
+        if (data.error) return alert("Error: " + data.error);
+
+        // Save token and user data
+        token = data.token;
+        currentUser = data.user;
+        localStorage.setItem('skideey_token', token);
+        localStorage.setItem('skideey_user', JSON.stringify(data.user));
+        
+        updateUI();
+        
+      } catch (err) {
+        alert("Error logging in: " + err.message);
+      }
+    }
+
+    // 🖼 Upload profile image
+    async function uploadProfile() {
+      if (!currentUser) return alert("Please login first!");
+      
+      const file = document.getElementById("profileImageInput").files[0];
+      if (!file) return alert("Please select a file!");
+
+      try {
+        const formData = new FormData();
+        formData.append("image", file);
+
+        const res = await fetch(`/api/profile/image`, {
+          method: "POST",
+          headers: {
+            'Authorization': `Bearer ${token}`
+          },
+          body: formData
+        });
+
+        const data = await res.json();
+        if (data.error) return alert("Error: " + data.error);
+
+        if (data.imageUrl) {
+          document.getElementById("profileImageDisplay").src = data.imageUrl;
+          currentUser.profileImage = data.imageUrl;
+          localStorage.setItem('skideey_user', JSON.stringify(currentUser));
+          alert("Profile picture updated successfully!");
+        }
+      } catch (err) {
+        alert("Error uploading profile: " + err.message);
+      }
+    }
+
+    // 📁 Upload files
+    async function uploadFiles() {
+      if (!currentUser) return alert("Please login first!");
+      
+      const files = document.getElementById("fileUpload").files;
+      if (files.length === 0) return alert("Please select files!");
+
+      alert("File upload functionality would be implemented here");
+      
+      // Clear files
+      document.getElementById("fileUpload").value = "";
+    }
+
+    // 📰 Create Post
+    async function createPost() {
+      if (!currentUser) return alert("Please login first!");
+
+      const content = document.getElementById("postContent").value.trim();
+      const mediaFiles = document.getElementById("media").files;
+      
+      if (!content && mediaFiles.length === 0) {
+        return alert("Please enter some content or select media to post");
+      }
+
+      try {
+        const formData = new FormData();
+        formData.append("content", content);
+        
+        for (let i = 0; i < mediaFiles.length; i++) {
+          formData.append("media", mediaFiles[i]);
+        }
+
+        const res = await fetch("/api/posts", { 
+          method: "POST",
+          headers: {
+            'Authorization': `Bearer ${token}`
+          },
+          body: formData 
+        });
+
+        if (!res.ok) {
+          const errorData = await res.json();
+          throw new Error(errorData.error || 'Failed to create post');
+        }
+
+        // Clear form
+        document.getElementById("postContent").value = "";
+        document.getElementById("media").value = "";
+        
+      } catch (err) {
+        alert("Error creating post: " + err.message);
+      }
+    }
+
+    // 📰 Load Posts
+    async function loadPosts() {
+      try {
+        const res = await fetch("/api/posts");
+        if (!res.ok) throw new Error('Failed to load posts');
+        
+        const posts = await res.json();
+        const box = document.getElementById("posts");
+        
+        if (posts.length === 0) {
+          box.innerHTML = '<div class="loading">No posts yet. Be the first to post!</div>';
+          return;
+        }
+
+        box.innerHTML = posts.map(p => `
+          <div class="post">
+            <div class="author">
+              <img src="${p.author.profileImage || 'https://cdn-icons-png.flaticon.com/512/847/847969.png'}" 
+                   alt="${p.author.username}">
+              <div>
+                <strong>${p.author.username}</strong>
+                <div style="font-size: 0.8rem; color: rgba(255,255,255,0.7);">
+                  ${new Date(p.createdAt).toLocaleString()}
+                </div>
+              </div>
+            </div>
+            <div class="post-content">${p.content || ""}</div>
+            ${p.mediaUrls.map(m => `
+              <img src="${m}" class="media" onerror="this.style.display='none'">
+            `).join("")}
+            
+            <div class="post-stats">
+              <div class="stat ${currentUser && p.likes.includes(currentUser.id) ? 'active' : ''}" 
+                   onclick="likePost('${p._id}')">
+                👍 ${p.likes.length}
+              </div>
+              <div class="stat" onclick="focusComment('${p._id}')">
+                💬 ${p.comments.length}
+              </div>
+              <div class="stat">
+                👁 ${p.views}
+              </div>
+            </div>
+
+            <div class="comments-section">
+              ${p.comments.map(comment => `
+                <div class="comment">
+                  <div class="comment-header">
+                    <img src="${comment.user.profileImage || 'https://cdn-icons-png.flaticon.com/512/847/847969.png'}" 
+                         alt="${comment.user.username}">
+                    <strong>${comment.user.username}</strong>
+                    <span style="font-size: 0.8rem; color: rgba(255,255,255,0.7);">
+                      ${new Date(comment.createdAt).toLocaleString()}
+                    </span>
+                  </div>
+                  <div>${comment.text}</div>
+                </div>
+              `).join("")}
+              
+              <div class="comment-input">
+                <input type="text" id="comment-${p._id}" placeholder="Add a comment..." 
+                       onkeypress="handleCommentKeypress(event, '${p._id}')">
+                <button class="action" onclick="addComment('${p._id}')">Comment</button>
+              </div>
+            </div>
+          </div>
+        `).join("");
+
+        // Track views for loaded posts
+        posts.forEach(post => {
+          trackView(post._id);
+        });
+
+      } catch (err) {
+        document.getElementById("posts").innerHTML = `
+          <div class="error">Error loading posts: ${err.message}</div>
+        `;
+      }
+    }
+
+    // Track post view
+    async function trackView(postId) {
+      try {
+        await fetch(`/api/posts/${postId}/view`, {
+          method: 'POST'
+        });
+      } catch (err) {
+        console.error('Error tracking view:', err);
+      }
+    }
+
+    // Like/Unlike post
+    async function likePost(postId) {
+      if (!currentUser) {
+        alert("Please login to like posts");
+        return;
+      }
+
+      try {
+        const res = await fetch(`/api/posts/${postId}/like`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+
+        if (!res.ok) throw new Error('Failed to like post');
+        
+      } catch (err) {
+        alert("Error liking post: " + err.message);
+      }
+    }
+
+    // Add comment
+    async function addComment(postId) {
+      if (!currentUser) {
+        alert("Please login to comment");
+        return;
+      }
+
+      const commentInput = document.getElementById(`comment-${postId}`);
+      const text = commentInput.value.trim();
+      
+      if (!text) return alert("Please enter a comment");
+
+      try {
+        const res = await fetch(`/api/posts/${postId}/comment`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ text })
+        });
+
+        if (!res.ok) throw new Error('Failed to add comment');
+        
+        commentInput.value = "";
+        
+      } catch (err) {
+        alert("Error adding comment: " + err.message);
+      }
+    }
+
+    function focusComment(postId) {
+      if (!currentUser) {
+        alert("Please login to comment");
+        return;
+      }
+      document.getElementById(`comment-${postId}`).focus();
+    }
+
+    function handleCommentKeypress(event, postId) {
+      if (event.key === 'Enter') {
+        addComment(postId);
+      }
+    }
+
+    // Load public rooms
+    async function loadRooms() {
+      try {
+        document.getElementById('roomsLoading').style.display = 'block';
+        document.getElementById('roomsContainer').style.display = 'none';
+        
+        const res = await fetch("/api/rooms");
+        if (!res.ok) throw new Error('Failed to load rooms');
+        
+        const rooms = await res.json();
+        const roomsList = document.getElementById("roomsList");
+        
+        if (rooms.length === 0) {
+          roomsList.innerHTML = '<div class="loading">No public rooms available. Create one!</div>';
+        } else {
+          roomsList.innerHTML = rooms.map(room => `
+            <div class="room-item ${room.isPrivate ? 'private-room' : 'public-room'}" onclick="joinRoomFromList('${room._id}', ${room.isPrivate})">
+              <div class="room-header">
+                <div class="room-name">${room.name} ${room.isPrivate ? '🔒' : '🔓'}</div>
+                <div class="room-stats">👥 ${room.userCount}/${room.maxUsers}</div>
+              </div>
+              <div class="room-description">${room.description || 'No description'}</div>
+              <div class="room-creator">Created by: ${room.createdBy.username}</div>
+            </div>
+          `).join("");
+        }
+        
+        document.getElementById('roomsLoading').style.display = 'none';
+        document.getElementById('roomsContainer').style.display = 'block';
+      } catch (err) {
+        document.getElementById('roomsList').innerHTML = `<div class="error">Error loading rooms: ${err.message}</div>`;
+      }
+    }
+
+    // Create new room
+    async function createRoom() {
+      const name = document.getElementById("newRoomName").value.trim();
+      const description = document.getElementById("roomDescription").value.trim();
+      const isPrivate = document.getElementById("isPrivateRoom").checked;
+      const password = document.getElementById("newRoomPassword").value;
+      const maxUsers = parseInt(document.getElementById("roomMaxUsers").value) || 100;
+
+      if (!name) {
+        return alert("Please enter a room name");
+      }
+
+      try {
+        const res = await fetch("/api/rooms", {
+          method: "POST",
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            name,
+            description,
+            isPrivate,
+            password: isPrivate ? password : undefined,
+            maxUsers
+          })
+        });
+
+        const data = await res.json();
+        if (data.error) return alert("Error: " + data.error);
+
+        alert("Room created successfully!");
+        // Clear form
+        document.getElementById("newRoomName").value = "";
+        document.getElementById("roomDescription").value = "";
+        document.getElementById("isPrivateRoom").checked = false;
+        document.getElementById("newRoomPassword").value = "";
+        document.getElementById("roomMaxUsers").value = "100";
+        togglePasswordField();
+        
+        // Switch to join tab and join the new room
+        switchChatTab('join');
+        document.getElementById('roomName').value = name;
+        joinRoom();
+        
+      } catch (err) {
+        alert("Error creating room: " + err.message);
+      }
+    }
+
+    // Join room from rooms list
+    async function joinRoomFromList(roomId, isPrivate) {
+      if (isPrivate) {
+        currentRoom = roomId;
+        document.getElementById('passwordSection').style.display = 'block';
+      } else {
+        await joinRoomById(roomId);
+      }
+    }
+
+    // Join room by ID
+    async function joinRoomById(roomId, password = null) {
+      try {
+        const res = await fetch(`/api/rooms/${roomId}/join`, {
+          method: "POST",
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ password })
+        });
+
+        const data = await res.json();
+        if (data.error) return alert("Error: " + data.error);
+
+        currentRoom = roomId;
+        currentRoomInfo = data.room;
+        
+        // Join socket room
+        socket.emit("joinRoom", data.room.name);
+        
+        // Update UI
+        updateRoomUI(data.room);
+        await loadRoomMessages();
+        
+      } catch (err) {
+        alert("Error joining room: " + err.message);
+      }
+    }
+
+    // Join room with password
+    async function joinRoomWithPassword() {
+      const password = document.getElementById("roomPassword").value;
+      if (!password) return alert("Please enter room password");
+      
+      await joinRoomById(currentRoom, password);
+      document.getElementById('passwordSection').style.display = 'none';
+      document.getElementById('roomPassword').value = "";
+    }
+
+    // Update room UI
+    function updateRoomUI(room) {
+      document.getElementById("currentRoomInfo").style.display = 'block';
+      document.getElementById("currentRoomName").textContent = room.name;
+      document.getElementById("roomUserCount").textContent = `(${room.userCount} users)`;
+      document.getElementById("roomDescriptionDisplay").textContent = room.description || "No description";
+      document.getElementById("messageInputSection").style.display = 'block';
+      document.getElementById('passwordSection').style.display = 'none';
+    }
+
+    // Leave room
+    async function leaveRoom() {
+      if (currentRoom) {
+        try {
+          await fetch(`/api/rooms/${currentRoom}/leave`, {
+            method: "POST",
+            headers: {
+              'Authorization': `Bearer ${token}`
+            }
+          });
+          
+          socket.emit("leaveRoom", currentRoomInfo?.name);
+        } catch (err) {
+          console.error("Error leaving room:", err);
+        }
+      }
+      
+      currentRoom = null;
+      currentRoomInfo = null;
+      document.getElementById("currentRoomInfo").style.display = 'none';
+      document.getElementById("messageInputSection").style.display = 'none';
+      document.getElementById("chatBox").innerHTML = '<div class="loading">Join a room to start chatting...</div>';
+    }
+
+    // Join room by name
+    async function joinRoom() {
+      const roomName = document.getElementById("roomName").value.trim();
+      if (!roomName) return alert("Please enter a room name");
+
+      // For now, we'll join by name. In production, you'd look up room by name first
+      socket.emit("joinRoom", roomName);
+      currentRoom = roomName;
+      
+      // Update UI
+      document.getElementById("currentRoomInfo").style.display = 'block';
+      document.getElementById("currentRoomName").textContent = roomName;
+      document.getElementById("roomDescriptionDisplay").textContent = "";
+      document.getElementById("messageInputSection").style.display = 'block';
+      
+      await loadRoomMessages();
+    }
+
+    // Load messages for current room
+    async function loadRoomMessages() {
+      if (!currentRoom || !currentUser) return;
+      
+      try {
+        const res = await fetch(`/api/messages/${currentRoomInfo?.name || currentRoom}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        
+        if (!res.ok) throw new Error('Failed to load messages');
+        
+        const messages = await res.json();
+        const chatBox = document.getElementById("chatBox");
+        
+        chatBox.innerHTML = messages.map(msg => `
+          <div class="message">
+            <div class="sender">${msg.sender.username}</div>
+            <div>${msg.text || ""}</div>
+            ${msg.mediaUrls.map(url => `
+              <img src="${url}" style="max-width: 200px; border-radius: 5px; margin-top: 5px;" 
+                   onerror="this.style.display='none'">
+            `).join("")}
+            <div style="font-size: 0.8rem; color: rgba(255,255,255,0.7); margin-top: 5px;">
+              ${new Date(msg.createdAt).toLocaleTimeString()}
+            </div>
+          </div>
+        `).join("");
+        
+        chatBox.scrollTop = chatBox.scrollHeight;
+      } catch (err) {
+        console.error("Error loading messages:", err);
+      }
+    }
+
+    // Handle Enter key in chat
+    function handleChatKeypress(event) {
+      if (event.key === 'Enter') {
+        sendMessage();
+      }
+    }
+
+    // 💬 Send Message
+    async function sendMessage() {
+      if (!currentUser) return alert("Please login first!");
+      if (!currentRoom) return alert("Please join a room first!");
+
+      const text = document.getElementById("chatMessage").value.trim();
+      const files = document.getElementById("chatMedia").files;
+      
+      if (!text && files.length === 0) {
+        return alert("Please enter a message or select media");
+      }
+
+      try {
+        const formData = new FormData();
+        formData.append("room", currentRoomInfo?.name || currentRoom);
+        formData.append("text", text);
+        
+        for (let i = 0; i < files.length; i++) {
+          formData.append("media", files[i]);
+        }
+
+        const res = await fetch("/api/message", { 
+          method: "POST",
+          headers: {
+            'Authorization': `Bearer ${token}`
+          },
+          body: formData 
+        });
+
+        if (!res.ok) {
+          const errorData = await res.json();
+          throw new Error(errorData.error || 'Failed to send message');
+        }
+
+        document.getElementById("chatMessage").value = "";
+        document.getElementById("chatMedia").value = "";
+        
+      } catch (err) {
+        alert("Error sending message: " + err.message);
+      }
+    }
+
+    // Update UI based on authentication state
+    function updateUI() {
+      const isLoggedIn = !!currentUser;
+      
+      // Show/hide elements based on login state
+      document.getElementById('postCreator').style.display = isLoggedIn ? 'block' : 'none';
+      document.getElementById('profileManagement').style.display = isLoggedIn ? 'block' : 'none';
+      document.getElementById('chatInterface').style.display = isLoggedIn ? 'block' : 'none';
+      
+      // Update status messages
+      if (isLoggedIn) {
+        document.getElementById('feedStatus').innerHTML = `<div class="success">✅ Ready to post as ${currentUser.username}</div>`;
+        document.getElementById('chatStatus').innerHTML = `<div class="success">✅ Ready to chat as ${currentUser.username}</div>`;
+        document.getElementById('profileStatus').innerHTML = `<div class="success">✅ Welcome, ${currentUser.username}!</div>`;
+        
+        // Update profile info
+        document.getElementById('currentUsername').textContent = currentUser.username;
+        document.getElementById('profileImageDisplay').src = currentUser.profileImage;
+        document.getElementById('memberSince').textContent = new Date().toLocaleDateString();
+      } else {
+        document.getElementById('feedStatus').innerHTML = '🔍 Viewing posts as guest. <a href="#" onclick="switchTab(\'profile\'); return false;">Login to post and interact</a>';
+        document.getElementById('chatStatus').innerHTML = '🔒 Please login to access chat';
+        document.getElementById('profileStatus').innerHTML = 'Create an account or login to get started';
+      }
+    }
+
+    // Logout
+    function logout() {
+      if (currentRoom) {
+        leaveRoom();
+      }
+      currentUser = null;
+      token = null;
+      currentRoom = null;
+      currentRoomInfo = null;
+      localStorage.removeItem('skideey_token');
+      localStorage.removeItem('skideey_user');
+      updateUI();
+      loadPosts();
+    }
+
+    // Socket event listeners
+    socket.on("newPost", () => {
+      loadPosts();
+    });
+
+    socket.on("postUpdated", () => {
+      loadPosts();
+    });
+
+    socket.on("newMessage", (msg) => {
+      if (msg.room !== (currentRoomInfo?.name || currentRoom)) return;
+      
+      const chatBox = document.getElementById("chatBox");
+      chatBox.innerHTML += `
+        <div class="message">
+          <div class="sender">${msg.sender.username}</div>
+          <div>${msg.text || ""}</div>
+          ${msg.mediaUrls.map(url => `
+            <img src="${url}" style="max-width: 200px; border-radius: 5px; margin-top: 5px;"
+                 onerror="this.style.display='none'">
+          `).join("")}
+          <div style="font-size: 0.8rem; color: rgba(255,255,255,0.7); margin-top: 5px;">
+            ${new Date().toLocaleTimeString()}
+          </div>
+        </div>
+      `;
+      
+      chatBox.scrollTop = chatBox.scrollHeight;
+    });
+
+    // Socket event for user count updates
+    socket.on("userJoined", (data) => {
+      if (currentRoomInfo && data.room === currentRoomInfo.name) {
+        document.getElementById("roomUserCount").textContent = `(${data.userCount} users)`;
+      }
+    });
+
+    socket.on("userLeft", (data) => {
+      if (currentRoomInfo && data.room === currentRoomInfo.name) {
+        document.getElementById("roomUserCount").textContent = `(${data.userCount} users)`;
+      }
+    });
+
+    // Handle connection errors
+    socket.on("connect_error", (error) => {
+      console.error("Socket connection error:", error);
+    });
+
+    // Initial load
+    loadPosts();
+  </script>
+</body>
+</html>
