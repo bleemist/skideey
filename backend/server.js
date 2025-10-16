@@ -1,187 +1,181 @@
-require('dotenv').config();
-const express = require('express');
-const mongoose = require('mongoose');
-const bcrypt = require('bcrypt');
-const jwt = require('jsonwebtoken');
-const cors = require('cors');
-const multer = require('multer');
-const http = require('http');
-const fs = require('fs');
-const path = require('path');
-const { Server } = require('socket.io');
+require("dotenv").config();
+const express = require("express");
+const mongoose = require("mongoose");
+const cors = require("cors");
+const bcrypt = require("bcryptjs");
+const jwt = require("jsonwebtoken");
+const multer = require("multer");
+const cloudinary = require("cloudinary").v2;
+const { Server } = require("socket.io");
+const http = require("http");
 
-// Models
-const User = require('./models/User');
-const Post = require('./models/Post');
-const Room = require('./models/Room');
-const Message = require('./models/Message');
+const User = require("./models/User");
+const Post = require("./models/Post");
+const Message = require("./models/Message");
+const Room = require("./models/Room");
 
 const app = express();
-const server = http.createServer(app);
-const io = new Server(server, { cors: { origin: '*' } });
-
-const uploadDir = path.join(__dirname, 'uploads');
-if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir);
-
-// Middleware
-app.use(cors());
 app.use(express.json());
-app.use('/uploads', express.static(uploadDir));
+app.use(cors());
 
-// File upload (photos, videos, docs)
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, uploadDir),
-  filename: (req, file, cb) => {
-    const uniqueName = Date.now() + '-' + file.originalname.replace(/\s+/g, '_');
-    cb(null, uniqueName);
-  }
+// 🌤 Cloudinary Configuration
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET
 });
+
+// ⚙️ Multer for file uploads
+const storage = multer.memoryStorage();
 const upload = multer({ storage });
 
-// Connect MongoDB
+// 🧩 MongoDB Connection
 mongoose.connect(process.env.MONGO_URI)
-  .then(() => console.log('✅ MongoDB connected'))
-  .catch(err => console.error('❌ MongoDB error:', err));
+  .then(() => console.log("✅ MongoDB Connected"))
+  .catch(err => console.error("MongoDB Error:", err));
 
-// Auth middleware
-const auth = (req, res, next) => {
-  const token = req.headers.authorization?.split(' ')[1];
-  if (!token) return res.sendStatus(401);
+// 🔐 Middleware for token authentication
+function auth(req, res, next) {
+  const token = req.header("Authorization");
+  if (!token) return res.status(401).json({ error: "Access denied" });
   try {
-    req.user = jwt.verify(token, process.env.JWT_SECRET);
+    const verified = jwt.verify(token, process.env.JWT_SECRET);
+    req.user = verified;
     next();
   } catch {
-    res.sendStatus(403);
+    res.status(400).json({ error: "Invalid token" });
   }
-};
+}
 
-// ------------------- ROUTES -------------------
+// 🧑 Register User
+app.post("/api/register", async (req, res) => {
+  const { username, password } = req.body;
+  const userExists = await User.findOne({ username });
+  if (userExists) return res.status(400).json({ error: "Username already exists" });
 
-// ✅ Register user
-app.post('/api/register', async (req, res) => {
-  try {
-    const { username, password } = req.body;
-    if (!username || !password)
-      return res.status(400).json({ msg: 'Username and password required' });
-
-    const existing = await User.findOne({ username });
-    if (existing) return res.status(400).json({ msg: 'Username already exists' });
-
-    const hashed = await bcrypt.hash(password, 10);
-    const user = await User.create({ username, password: hashed });
-    res.json(user);
-  } catch (e) {
-    res.status(500).json({ error: e.message });
-  }
+  const hashed = await bcrypt.hash(password, 10);
+  const user = new User({ username, password: hashed });
+  await user.save();
+  res.json({ message: "User registered successfully" });
 });
 
-// ✅ Login user
-app.post('/api/login', async (req, res) => {
+// 🔑 Login
+app.post("/api/login", async (req, res) => {
   const { username, password } = req.body;
   const user = await User.findOne({ username });
-  if (!user) return res.status(404).json({ msg: 'User not found' });
+  if (!user) return res.status(404).json({ error: "User not found" });
 
   const valid = await bcrypt.compare(password, user.password);
-  if (!valid) return res.status(401).json({ msg: 'Invalid credentials' });
+  if (!valid) return res.status(400).json({ error: "Invalid password" });
 
-  const token = jwt.sign({ id: user._id, username }, process.env.JWT_SECRET);
+  const token = jwt.sign({ _id: user._id }, process.env.JWT_SECRET);
   res.json({ token, user });
 });
 
-// ✅ Upload file (photo/video/document)
-app.post('/api/upload', upload.single('file'), (req, res) => {
-  res.json({ url: `/uploads/${req.file.filename}` });
+// 🧍 Update Profile Picture
+app.post("/api/profile/image", auth, upload.single("image"), async (req, res) => {
+  try {
+    const uploadRes = await new Promise((resolve, reject) => {
+      const stream = cloudinary.uploader.upload_stream({ resource_type: "image" }, (err, result) => {
+        if (err) reject(err);
+        else resolve(result);
+      });
+      stream.end(req.file.buffer);
+    });
+
+    await User.findByIdAndUpdate(req.user._id, { profileImage: uploadRes.secure_url });
+    res.json({ imageUrl: uploadRes.secure_url });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
-// ✅ Create post (text + media)
-app.post('/api/posts', auth, async (req, res) => {
+// 📰 Create Post
+app.post("/api/posts", auth, upload.array("media", 5), async (req, res) => {
   try {
-    const post = await Post.create({
-      author: req.user.id,
-      text: req.body.text,
-      media: req.body.media || []
+    const mediaUrls = [];
+
+    for (const file of req.files) {
+      const result = await new Promise((resolve, reject) => {
+        const stream = cloudinary.uploader.upload_stream({ resource_type: "auto" }, (err, r) => {
+          if (err) reject(err);
+          else resolve(r);
+        });
+        stream.end(file.buffer);
+      });
+      mediaUrls.push(result.secure_url);
+    }
+
+    const post = new Post({
+      author: req.user._id,
+      content: req.body.content,
+      mediaUrls
     });
+    await post.save();
     res.json(post);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-// ✅ Fetch posts
-app.get('/api/posts', async (req, res) => {
-  const posts = await Post.find()
-    .populate('author', 'username avatarUrl')
-    .sort({ createdAt: -1 });
+// 💬 Create or Join Room
+app.post("/api/room", auth, async (req, res) => {
+  const { name } = req.body;
+  let room = await Room.findOne({ name });
+  if (!room) room = await Room.create({ name, createdBy: req.user._id, members: [req.user._id] });
+  res.json(room);
+});
+
+// 💬 Send Message
+app.post("/api/message", auth, upload.array("media", 5), async (req, res) => {
+  const mediaUrls = [];
+
+  for (const file of req.files) {
+    const result = await new Promise((resolve, reject) => {
+      const stream = cloudinary.uploader.upload_stream({ resource_type: "auto" }, (err, r) => {
+        if (err) reject(err);
+        else resolve(r);
+      });
+      stream.end(file.buffer);
+    });
+    mediaUrls.push(result.secure_url);
+  }
+
+  const message = new Message({
+    room: req.body.room,
+    sender: req.user._id,
+    text: req.body.text,
+    mediaUrls
+  });
+  await message.save();
+  io.to(req.body.room).emit("newMessage", message);
+  res.json(message);
+});
+
+// 🧠 Fetch All Posts
+app.get("/api/posts", async (req, res) => {
+  const posts = await Post.find().populate("author", "username profileImage").sort({ timestamp: -1 });
   res.json(posts);
 });
 
-// ✅ Update profile picture
-app.post('/api/profile/avatar', auth, upload.single('avatar'), async (req, res) => {
-  const user = await User.findById(req.user.id);
-  user.avatarUrl = `/uploads/${req.file.filename}`;
-  await user.save();
-  res.json(user);
-});
+// ⚙️ Socket.io setup
+const server = http.createServer(app);
+const io = new Server(server, { cors: { origin: "*" } });
 
-// ✅ Create chat room
-app.post('/api/rooms', auth, async (req, res) => {
-  const { name, password } = req.body;
-  if (!name || !password) return res.status(400).json({ msg: 'Name & password required' });
+io.on("connection", (socket) => {
+  console.log("🟢 Connected:", socket.id);
 
-  if (await Room.findOne({ name })) return res.status(400).json({ msg: 'Room already exists' });
-
-  const passwordHash = await bcrypt.hash(password, 10);
-  const room = await Room.create({ name, passwordHash, createdBy: req.user.id });
-  res.json(room);
-});
-
-// ✅ Join chat room
-app.post('/api/rooms/join', auth, async (req, res) => {
-  const { name, password } = req.body;
-  const room = await Room.findOne({ name });
-  if (!room) return res.status(404).json({ msg: 'Room not found' });
-
-  const match = await bcrypt.compare(password, room.passwordHash);
-  if (!match) return res.status(401).json({ msg: 'Incorrect password' });
-
-  res.json(room);
-});
-
-// ✅ Get list of all chat rooms
-app.get('/api/rooms', auth, async (req, res) => {
-  const rooms = await Room.find().sort({ createdAt: -1 });
-  res.json(rooms);
-});
-
-// ✅ Real-time messaging (Socket.IO)
-io.on('connection', socket => {
-  console.log('🟢 User connected');
-
-  socket.on('joinRoom', roomName => {
-    socket.join(roomName);
-    console.log(`User joined room: ${roomName}`);
+  socket.on("joinRoom", (room) => {
+    socket.join(room);
+    console.log(`Joined room: ${room}`);
   });
 
-  socket.on('chatMessage', async data => {
-    const { room, encryptedText, sender, attachments } = data;
-    const roomObj = await Room.findOne({ name: room });
-    if (!roomObj) return;
-
-    await Message.create({
-      room: roomObj._id,
-      sender,
-      encryptedText,
-      attachments
-    });
-
-    io.to(room).emit('message', data);
+  socket.on("disconnect", () => {
+    console.log("🔴 Disconnected:", socket.id);
   });
-
-  socket.on('disconnect', () => console.log('🔴 User disconnected'));
 });
 
-// ✅ Start server
-const PORT = process.env.PORT || 5000;
-server.listen(PORT, '0.0.0.0', () => {
-  console.log(`🚀 SKIDEEY Backend running on http://localhost:${PORT}`);
-});
+// 🚀 Start Server
+server.listen(process.env.PORT || 5000, () =>
+  console.log(`🚀 Server running on port ${process.env.PORT}`)
+);
